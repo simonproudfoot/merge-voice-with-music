@@ -20,7 +20,14 @@ app.post('/voice_process', (req, res) => {
   const musicVolume = req.query.musicVolume;
   const inputFile1 = req.query.voicePath;
   const voiceDelay = req.query.voiceDelay;
-  const inputFile2 = './sounds/news.mp3';
+
+
+  console.log('musicVolume', musicVolume)
+  console.log('inputFile1', inputFile1)
+  console.log('voiceDelay', voiceDelay)
+
+  
+  const inputFile2 = './sounds/ambient.mp3';
   const outputFile = 'output.mp3';
 
   // Create a new ffmpeg command
@@ -34,12 +41,6 @@ app.post('/voice_process', (req, res) => {
 
   // Use the concat filter to merge the two input files
   command.complexFilter([
-    {
-      filter: 'volume',
-      options: ['1.0'],
-      inputs: "0:0",
-      outputs: "[s1]"
-    },
     {
       filter: 'volume',
       options: [musicVolume],
