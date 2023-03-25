@@ -104,6 +104,6 @@ app.post('/voice_process', (req, res) => {
 });
 
 // Start the server
-app.listen(3000, () => {
+app.listen(process.env.PORT || 5000, () => {
   console.log('Server started on port 3000');
 });
