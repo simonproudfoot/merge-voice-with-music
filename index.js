@@ -2,7 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
-
+// install on Heroku command line to work:
+// heroku buildpacks:add --index 1 https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
 // Set up Express app
 const app = express();
 
@@ -10,6 +11,13 @@ const app = express();
 app.use(bodyParser.json());
 
 // Set up multer middleware to handle file uploads
+app.post('/test', (req, res) => {
+
+  const musicVolume = req.query.musicVolume;
+  const inputFile1 = req.query.voicePath;
+  const voiceDelay = req.query.voiceDelay;
+  res.send([musicVolume, inputFile1, voiceDelay])
+})
 
 // Define a route for processing voice
 app.post('/voice_process', (req, res) => {
