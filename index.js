@@ -10,14 +10,15 @@ const app = express();
 // Set up bodyParser middleware
 app.use(bodyParser.json());
 
+
 // Set up multer middleware to handle file uploads
 app.post('/test', (req, res) => {
-
   const musicVolume = req.query.musicVolume;
   const inputFile1 = req.query.voicePath;
   const voiceDelay = req.query.voiceDelay;
   res.send([musicVolume, inputFile1, voiceDelay])
 })
+
 
 // Define a route for processing voice
 app.post('/voice_process', (req, res) => {
