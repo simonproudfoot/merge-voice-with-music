@@ -22,31 +22,32 @@ app.post('/test', (req, res) => {
 
 // Define a route for processing voice
 app.post('/voice_process', (req, res) => {
-  console.log('connected')
+  console.log(res)
+  
   console.log(req.query.voicePath)
 
   // Set the paths of the input files and the output file
-  const musicVolume = req.query.musicVolume;
-  const inputFile1 = req.query.voicePath;
+
+  const voicePath = req.query.voicePath;
+  const musicPath = req.query.musicPath;
   const voiceDelay = req.query.voiceDelay;
+  const musicVolume = req.query.musicVolume;
 
-
+  console.log('voicePath', voicePath)
+  console.log('musicPath', musicPath)
   console.log('musicVolume', musicVolume)
-  console.log('inputFile1', inputFile1)
   console.log('voiceDelay', voiceDelay)
 
-  
-  const inputFile2 = './sounds/ambient.mp3';
-  const outputFile = 'output.mp3';
+  const outputFile = 'output.mp3'; // name of file (rename to oroginal file name)
 
   // Create a new ffmpeg command
   const command = ffmpeg();
 
-  // Add the first input file to the command
-  command.input(inputFile1);
+  // Add the voice file
+  command.input(voicePath);
 
-  // Add the second input file to the command, and lower its volume by 6dB
-  command.input(inputFile2)
+  // Add the music fole
+  command.input(musicPath)
 
   // Use the concat filter to merge the two input files
   command.complexFilter([
@@ -68,7 +69,7 @@ app.post('/voice_process', (req, res) => {
       options: [voiceDelay + "s"],
       outputs: "[s1]"
     },
-    
+
     // {
     //   filter: "aloop",
     //   inputs: "[s2]",
@@ -82,26 +83,25 @@ app.post('/voice_process', (req, res) => {
       options: ['duration=first', 'dropout_transition=0']
     }])
 
-  // Set the output format and file path
- // command.outputFormat('mp3').save(outputFile);
- res.send('done!')
+  //Set the output format and file path
+  command.outputFormat('mp3').save(outputFile);
 
-  // // Run the command and send the output file as a response
-  // command.on('error', function (err) {
-  //   console.log('An error occurred: ' + err.message);
-  //   res.status(500).send('An error occurred while processing the voice file');
-  // })
-  //   .on('end', function () {
-  //     console.log('Finished processing');
-  //     res.sendFile(outputFile, { root: __dirname }, (err) => {
-  //       if (err) {
-  //         console.log('An error occurred while sending the file: ' + err.message);
-  //         res.status(500).send('An error occurred while sending the file');
-  //       } else {
-  //         console.log('File sent successfully');
-  //       }
-  //     });
-  //   });
+  // Run the command and send the output file as a response
+  command.on('error', function (err) {
+    console.log('An error occurred: ' + err.message);
+    res.status(500).send('An error occurred while processing the voice file');
+  })
+    .on('end', function () {
+      console.log('Finished processing');
+      res.sendFile(outputFile, { root: __dirname }, (err) => {
+        if (err) {
+          console.log('An error occurred while sending the file: ' + err.message);
+          res.status(500).send('An error occurred while sending the file');
+        } else {
+          console.log('File sent successfully');
+        }
+      });
+    });
 });
 
 // Start the server
