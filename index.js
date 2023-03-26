@@ -83,7 +83,8 @@ app.post('/voice_process', (req, res) => {
     }])
 
   // Set the output format and file path
-  command.outputFormat('mp3').save(outputFile);
+ // command.outputFormat('mp3').save(outputFile);
+ res.send('done!')
 
   // // Run the command and send the output file as a response
   // command.on('error', function (err) {
