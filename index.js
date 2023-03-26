@@ -80,7 +80,7 @@ app.post('/voice_process', (req, res) => {
     {
       filter: 'amix',
       inputs: ["[s1]", "[s2]"],
-      options: ['duration=first', 'dropout_transition=0']
+      options: ['duration=first', 'dropout_transition=5']
     }])
 
   //Set the output format and file path
