@@ -1,13 +1,34 @@
+// install on Heroku command line to work:
+// heroku buildpacks:add --index 1 https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
-const ffmpeg = require('fluent-ffmpeg');
-// install on Heroku command line to work:
-// heroku buildpacks:add --index 1 https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+
 // Set up Express app
 const app = express();
 
+
+// AWS DEPENDENCIES
+const AWS = require('aws-sdk');
+const fs = require('fs');
+
+var storage = multer.diskStorage(
+  {
+      destination: './uploads/',
+      filename: function ( req, file, cb ) {
+          //req.body is empty...
+          //How could I get the new_file_name property sent from client here?
+          cb( null, file.originalname );
+      }
+  }
+);
+
+var upload = multer( { storage: storage } );
+
+
 // Set up bodyParser middleware
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Set up multer middleware to handle file uploads
@@ -21,90 +42,87 @@ app.post('/test', (req, res) => {
 
 
 // Define a route for processing voice
-app.post('/voice_process', (req, res) => {
-  console.log(res)
-  
-  console.log(req.query.voicePath)
+app.post('/voice_process_url', (req, res) => {
+  const mergeMusicUrl = require('./musicMergerFromUrl.js');
+  mergeMusicUrl.mergeUrl(req, res);
+});
 
-  // Set the paths of the input files and the output file
 
-  const voicePath = req.query.voicePath;
-  const musicPath = req.query.musicPath;
+
+app.post('/textToSpeech', upload.single("musicFile"), (req, res) => {
+
+  // voice params
+  let text = req.query.text
+  let voice = req.query.voice
+
+  console.log(voice, ' speaking')
+
+  // music params
+  //const voicePath = req.query.voicePath;
+  const musicPath = req.file.path;
   const voiceDelay = req.query.voiceDelay;
   const musicVolume = req.query.musicVolume;
 
-  console.log('voicePath', voicePath)
-  console.log('musicPath', musicPath)
-  console.log('musicVolume', musicVolume)
-  console.log('voiceDelay', voiceDelay)
+  const polly = new AWS.Polly({
+    accessKeyId: 'AKIAR67OLQ2CTEM4P2XK',
+    secretAccessKey: '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',
+    region: 'us-east-1'
+  }); // instantiate an AWS Polly client
 
-  const outputFile = 'output.mp3'; // name of file (rename to oroginal file name)
+  const params = {
+    Engine: "neural",
+    OutputFormat: 'mp3',
+    Text: text,
+    VoiceId: voice
+  }; // set parameters for Polly to generate an MP3 output
 
-  // Create a new ffmpeg command
-  const command = ffmpeg();
-
-  // Add the voice file
-  command.input(voicePath);
-
-  // Add the music fole
-  command.input(musicPath)
-
-  // Use the concat filter to merge the two input files
-  command.complexFilter([
-    {
-      filter: 'volume',
-      options: ['1.0'],
-      inputs: "0:0",
-      outputs: "[s1]"
-    },
-    {
-      filter: 'volume',
-      options: [musicVolume],
-      inputs: "1:0",
-      outputs: "[s2]"
-    },
-    {
-      filter: "adelay",
-      inputs: "[s1]",
-      options: [voiceDelay + "s"],
-      outputs: "[s1]"
-    },
-
-    // {
-    //   filter: "aloop",
-    //   inputs: "[s2]",
-    //   options: ["loop=-1:size=1"],
-    //   outputs: "[s2]"
-    // },
-
-    {
-      filter: 'amix',
-      inputs: ["[s1]", "[s2]"],
-      options: ['duration=first', 'dropout_transition=5']
-    }])
-
-  //Set the output format and file path
-  command.outputFormat('mp3').save(outputFile);
-
-  // Run the command and send the output file as a response
-  command.on('error', function (err) {
-    console.log('An error occurred: ' + err.message);
-    res.status(500).send('An error occurred while processing the voice file');
-  })
-    .on('end', function () {
-      console.log('Finished processing');
-      res.sendFile(outputFile, { root: __dirname }, (err) => {
+  polly.synthesizeSpeech(params, (err, data) => {
+    if (err) {
+      console.log(err);
+      res.status(500).json({ error: 'Failed to generate speech' });
+    } else if (data.AudioStream instanceof Buffer) {
+      fs.writeFile('speech.mp3', data.AudioStream, async (err) => {
         if (err) {
-          console.log('An error occurred while sending the file: ' + err.message);
-          res.status(500).send('An error occurred while sending the file');
+          console.log(err);
+          res.status(500).json({ error: 'Failed to save speech file' });
         } else {
-          console.log('File sent successfully');
+
+          // res.sendFile(__dirname + '/speech.mp3');
+          const mergeFiles = require('./mergeFiles.js');
+          const voicePath = __dirname + '/speech.mp3'
+          await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume);
+
+          // delete files when finished 
+          setTimeout(() => {
+            fs.unlink(voicePath, (err) => {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              console.log('Voice File deleted successfully');
+            });
+
+            fs.unlink(musicPath, (err) => {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              console.log('Music file deleted successfully');
+            });
+          }, 9000);
         }
       });
-    });
+    }
+  });
 });
+
+
+
+
+
 
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server started');
 });
+
