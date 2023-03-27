@@ -49,7 +49,7 @@ app.post('/voice_process_url', (req, res) => {
 
 
 
-app.post('/textToSpeech', upload.single("musicFile"), (req, res) => {
+app.post('/textToSpeech', upload.single("file"), (req, res) => {
 
   // voice params
   let text = req.query.text
