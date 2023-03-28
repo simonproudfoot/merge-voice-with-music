@@ -39,16 +39,26 @@ function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume) {
             outputs: "[s1]"
         },
         {
+            filter: 'aloop',
+            inputs: "[s2]",
+            options: {
+                loop: -1, // loop the channel twice
+                size: 20 * 48000 // number of samples to use for the loop
+            },
+            outputs: "[s2]"
+        },
+        {
             filter: "apad",
             inputs: "[s1]",
             options: ['pad_dur=5'],
             outputs: "[s1]"
         },
-
         {
             filter: 'amix',
             inputs: ["[s1]", "[s2]"],
-            options: ['duration=first', 'dropout_transition=5']
+            options: {
+                duration: 'first' // set the duration of the output to the duration of the longest input
+            },
         }])
 
     //Set the output format and file path
