@@ -14,6 +14,12 @@ const app = express();
 const AWS = require('aws-sdk');
 const fs = require('fs');
 
+const polly = new AWS.Polly({
+  accessKeyId: process.env['AWS_ACCESS_KEY_ID'],
+  secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'],
+  region: process.env['AWS_REGION']
+}); // instantiate an AWS Polly client
+
 var storage = multer.diskStorage(
   {
     destination: './uploads/',
@@ -26,6 +32,8 @@ var storage = multer.diskStorage(
 );
 
 var upload = multer({ storage: storage });
+
+
 
 
 // Set up bodyParser middleware
@@ -64,11 +72,7 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
   const voiceDelay = req.query.voiceDelay;
   const musicVolume = req.query.musicVolume;
 
-  const polly = new AWS.Polly({
-    accessKeyId: process.env['AWS_ACCESS_KEY_ID'],
-    secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'],
-    region: process.env['AWS_REGION']
-  }); // instantiate an AWS Polly client
+  
 
   const params = {
     Engine: "neural",
@@ -120,6 +124,24 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
 
 
 
+app.get('/get-voices', (req, res) => {
+  polly.describeVoices({}, (err, data) => {
+    if (err) {
+      console.log(err, err.stack);
+      res.status(500).send(err);
+    } else {
+      const voices = data.Voices.map((voice) => {
+        return {
+          name: voice.Name,
+          language: voice.LanguageName,
+          gender: voice.Gender,
+          id: voice.Id,
+        };
+      });
+      res.send(voices);
+    }
+  });
+});
 
 
 // Start the server
