@@ -9,23 +9,19 @@ const multer = require('multer');
 // Set up Express app
 const app = express();
 
-
 // AWS DEPENDENCIES
 const AWS = require('aws-sdk');
 const fs = require('fs');
-
 const polly = new AWS.Polly({
   accessKeyId: process.env['AWS_ACCESS_KEY_ID'],
   secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'],
   region: process.env['AWS_REGION']
-}); // instantiate an AWS Polly client
+}); 
 
 var storage = multer.diskStorage(
   {
     destination: './uploads/',
     filename: function (req, file, cb) {
-      //req.body is empty...
-      //How could I get the new_file_name property sent from client here?
       cb(null, file.originalname);
     }
   }
@@ -33,29 +29,16 @@ var storage = multer.diskStorage(
 
 var upload = multer({ storage: storage });
 
-
-
-
 // Set up bodyParser middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Set up multer middleware to handle file uploads
-app.post('/test', (req, res) => {
-  const musicVolume = req.query.musicVolume;
-  const inputFile1 = req.query.voicePath;
-  const voiceDelay = req.query.voiceDelay;
-  console.log([musicVolume, inputFile1, voiceDelay])
-  res.send([musicVolume, inputFile1, voiceDelay])
-})
 
-
-// Define a route for processing voice
+// Define a route for processing voice only
 app.post('/voice_process_url', (req, res) => {
   const mergeMusicUrl = require('./musicMergerFromUrl.js');
   mergeMusicUrl.mergeUrl(req, res);
 });
-
 
 
 app.post('/textToSpeech', upload.single("file"), (req, res) => {
@@ -64,22 +47,17 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
   let text = req.query.text
   let voice = req.query.voice
 
-  console.log(voice, ' speaking')
-
   // music params
-  //const voicePath = req.query.voicePath;
   const musicPath = req.file.path;
   const voiceDelay = req.query.voiceDelay;
   const musicVolume = req.query.musicVolume;
-
-  
 
   const params = {
     Engine: "neural",
     OutputFormat: 'mp3',
     Text: text,
     VoiceId: voice
-  }; // set parameters for Polly to generate an MP3 output
+  };
 
   polly.synthesizeSpeech(params, (err, data) => {
     if (err) {
@@ -92,7 +70,6 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
           res.status(500).json({ error: 'Failed to save speech file' });
         } else {
 
-          // res.sendFile(__dirname + '/speech.mp3');
           const mergeFiles = require('./mergeFiles.js');
           const voicePath = __dirname + '/speech.mp3'
           await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume);
@@ -121,9 +98,6 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
   });
 });
 
-
-
-
 app.get('/get-voices', (req, res) => {
   polly.describeVoices({}, (err, data) => {
     if (err) {
@@ -142,7 +116,6 @@ app.get('/get-voices', (req, res) => {
     }
   });
 });
-
 
 // Start the server
 app.listen(process.env.PORT || 3000, () => {

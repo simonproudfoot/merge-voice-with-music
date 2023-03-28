@@ -38,13 +38,12 @@ function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume) {
             options: [voiceDelay + "s"],
             outputs: "[s1]"
         },
-
-        // {
-        //   filter: "aloop",
-        //   inputs: "[s2]",
-        //   options: ["loop=-1:size=1"],
-        //   outputs: "[s2]"
-        // },
+        {
+            filter: "apad",
+            inputs: "[s1]",
+            options: ['pad_dur=5'],
+            outputs: "[s1]"
+        },
 
         {
             filter: 'amix',
