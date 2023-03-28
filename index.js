@@ -1,5 +1,6 @@
 // install on Heroku command line to work:
 // heroku buildpacks:add --index 1 https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+require('dotenv').config({ path: '.env' })
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -15,16 +16,16 @@ const fs = require('fs');
 
 var storage = multer.diskStorage(
   {
-      destination: './uploads/',
-      filename: function ( req, file, cb ) {
-          //req.body is empty...
-          //How could I get the new_file_name property sent from client here?
-          cb( null, file.originalname );
-      }
+    destination: './uploads/',
+    filename: function (req, file, cb) {
+      //req.body is empty...
+      //How could I get the new_file_name property sent from client here?
+      cb(null, file.originalname);
+    }
   }
 );
 
-var upload = multer( { storage: storage } );
+var upload = multer({ storage: storage });
 
 
 // Set up bodyParser middleware
@@ -64,9 +65,9 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
   const musicVolume = req.query.musicVolume;
 
   const polly = new AWS.Polly({
-    accessKeyId: 'AKIAR67OLQ2CTEM4P2XK',
-    secretAccessKey: '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',
-    region: 'us-east-1'
+    accessKeyId: process.env['AWS_ACCESS_KEY_ID'],
+    secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'],
+    region: process.env['AWS_REGION']
   }); // instantiate an AWS Polly client
 
   const params = {
