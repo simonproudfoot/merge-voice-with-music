@@ -16,7 +16,7 @@ const polly = new AWS.Polly({
   accessKeyId: process.env['AWS_ACCESS_KEY_ID'],
   secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'],
   region: process.env['AWS_REGION']
-}); 
+});
 
 var storage = multer.diskStorage(
   {
@@ -41,8 +41,12 @@ app.post('/voice_process_url', (req, res) => {
 });
 
 
-app.post('/textToSpeech', upload.single("file"), (req, res) => {
-
+app.post('/text_with_music', upload.single("file"), (req, res) => {
+  
+  if (!req.file || !req.query.voiceDelay || !req.query.musicVolume || !req.query.voice || !req.query.text || req.file == undefined || req.file == null || req.file == '') {
+    res.json({ error: 'Params missing' })
+    return
+  }
   // voice params
   let text = req.query.text
   let voice = req.query.voice
@@ -51,6 +55,7 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
   const musicPath = req.file.path;
   const voiceDelay = req.query.voiceDelay;
   const musicVolume = req.query.musicVolume;
+  const loopMusic = req.query.loopMusic == 'true' ? true : false
 
   const params = {
     Engine: "neural",
@@ -72,33 +77,33 @@ app.post('/textToSpeech', upload.single("file"), (req, res) => {
 
           const mergeFiles = require('./mergeFiles.js');
           const voicePath = __dirname + '/speech.mp3'
-          await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume);
+          await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
 
           // delete files when finished 
-          setTimeout(() => {
-            fs.unlink(voicePath, (err) => {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              console.log('Voice File deleted successfully');
-            });
+          // setTimeout(() => {
+          //   fs.unlink(voicePath, (err) => {
+          //     if (err) {
+          //       console.error(err);
+          //       return;
+          //     }
+          //     console.log('Voice File deleted successfully');
+          //   });
 
-            fs.unlink(musicPath, (err) => {
-              if (err) {
-                console.error(err);
-                return;
-              }
-              console.log('Music file deleted successfully');
-            });
-          }, 9000);
+          //   fs.unlink(musicPath, (err) => {
+          //     if (err) {
+          //       console.error(err);
+          //       return;
+          //     }
+          //     console.log('Music file deleted successfully');
+          //   });
+          // }, 9000);
         }
       });
     }
   });
 });
 
-app.get('/get-voices', (req, res) => {
+app.get('/get_voices', (req, res) => {
   polly.describeVoices({}, (err, data) => {
     if (err) {
       console.log(err, err.stack);

@@ -1,26 +1,20 @@
 const ffmpeg = require('fluent-ffmpeg');
-async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume) {
+async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic) {
 
-    console.log('Voice received!')
-    console.log('voicePath', voicePath)
-    console.log('musicPath', musicPath)
-    console.log('musicVolume', musicVolume)
-    console.log('voiceDelay', voiceDelay)
-    const fade = 1
     const outputFile = 'output.mp3'; // name of file (rename to oroginal file name)
     let audioFileDetails = await getSampleSize(musicPath)
     let voiceFileDetails = await getSampleSize(voicePath)
+    let voiceLength = voiceFileDetails.streams[0].duration
+    console.log('voiceLength', voiceLength)
+    console.log('voiceDelay', Number(voiceDelay))
+    console.log('start fade at', Number(voiceDelay) + voiceLength)
 
     const command = ffmpeg();
-
     // Add the voice file
     command.input(voicePath);
-
-    // Add the music fole
+    // Add the music file
     command.input(musicPath)
-
-
-    // Use the concat filter to merge the two input files
+    // run filters
     command.complexFilter([
         {
             filter: 'volume',
@@ -41,47 +35,41 @@ async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume) {
             outputs: "[s1]"
         },
         {
-            // aloop=1:size=20*48000
             filter: 'aloop',
             inputs: "[s2]",
             options: {
-                loop: -1, // loop the channel twice
-                size: audioFileDetails.duration_ts // number of samples to use for the loop
+                loop: loopMusic ? -1 : 0,
+                size: audioFileDetails.format.size, // number of samples to use for the loop
             },
             outputs: "[s2]"
         },
-
         {
             filter: "apad",
             inputs: "[s1]",
             options: ['pad_dur=5'],
             outputs: "[s1]"
         },
-
         {
             filter: 'amix',
             inputs: ["[s1]", "[s2]"],
             options: {
-                duration: 'first' // set the duration of the output to the duration of the longest input
+                duration: 'first'
             },
-            outputs: '[out]'
+            outputs: "[out]"
         },
         {
             filter: 'afade',
-            inputs: '[out]',
+            inputs: "[out]",
             options: {
-                t: 'out',
-                st: voiceFileDetails.duration, // start fading out 5 seconds before the end
-                d: 10 // fade out over 10 seconds
-            },
-        
-        },
-
+                type: 'out',
+                start_time: Number(voiceDelay) + voiceLength,
+                duration: 5,
+                curve: 'tri'
+            }
+        }
     ])
-
     //Set the output format and file path
     command.outputFormat('mp3').save(outputFile);
-
     // Run the command and send the output file as a response
     command.on('error', function (err) {
         console.log('An error occurred: ' + err.message);
@@ -100,8 +88,6 @@ async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume) {
             });
         });
 }
-
-
 function getSampleSize(filePath) {
     return new Promise((resolve, reject) => {
         ffmpeg.ffprobe(filePath, (err, metadata) => {
@@ -109,10 +95,9 @@ function getSampleSize(filePath) {
                 reject(err);
             } else {
 
-                resolve(metadata.streams[0]);
+                resolve(metadata);
             }
         });
     });
 }
-
 module.exports = { mergeFiles };
