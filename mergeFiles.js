@@ -5,9 +5,6 @@ async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, lo
     let audioFileDetails = await getSampleSize(musicPath)
     let voiceFileDetails = await getSampleSize(voicePath)
     let voiceLength = voiceFileDetails.streams[0].duration
-    console.log('voiceLength', voiceLength)
-    console.log('voiceDelay', Number(voiceDelay))
-    console.log('start fade at', Number(voiceDelay) + voiceLength)
 
     const command = ffmpeg();
     // Add the voice file

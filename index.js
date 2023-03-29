@@ -42,8 +42,8 @@ app.post('/voice_process_url', (req, res) => {
 
 
 app.post('/text_with_music', upload.single("file"), (req, res) => {
-  
-  if (!req.file || !req.query.voiceDelay || !req.query.musicVolume || !req.query.voice || !req.query.text || req.file == undefined || req.file == null || req.file == '') {
+
+  if (!req.query.voiceDelay || !req.query.musicVolume || !req.query.voice || !req.query.text) {
     res.json({ error: 'Params missing' })
     return
   }
@@ -52,7 +52,6 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
   let voice = req.query.voice
 
   // music params
-  const musicPath = req.file.path;
   const voiceDelay = req.query.voiceDelay;
   const musicVolume = req.query.musicVolume;
   const loopMusic = req.query.loopMusic == 'true' ? true : false
@@ -77,8 +76,23 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
 
           const mergeFiles = require('./mergeFiles.js');
           const voicePath = __dirname + '/speech.mp3'
-          await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
 
+          // voice only
+          if (!req.file || req.file == undefined || req.file == null || req.file == '') {
+
+            res.sendFile(voicePath, (err) => {
+              if (err) {
+                console.log('An error occurred while sending the file: ' + err.message);
+                res.status(500).send('An error occurred while sending the file');
+              } else {
+                console.log('File sent successfully');
+                return
+              }
+            });
+          } else {
+            const musicPath = req.file.path;
+            await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
+          }
           // delete files when finished 
           // setTimeout(() => {
           //   fs.unlink(voicePath, (err) => {
