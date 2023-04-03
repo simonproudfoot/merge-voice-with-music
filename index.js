@@ -60,8 +60,7 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
     Engine: "neural",
     OutputFormat: 'mp3',
     Text: text,
-    VoiceId: voice,
-    SpeechRate: '0.5'
+    VoiceId: voice
   };
 
   polly.synthesizeSpeech(params, (err, data) => {
