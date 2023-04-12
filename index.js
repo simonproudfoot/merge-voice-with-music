@@ -6,12 +6,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const cors = require('cors');
-app.use(cors({
-  origin: '*'
-}));
 
 // Set up Express app
 const app = express();
+app.use(cors({
+  origin: '*'
+}));
 
 // AWS DEPENDENCIES
 const AWS = require('aws-sdk');
