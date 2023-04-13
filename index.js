@@ -64,7 +64,7 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
     OutputFormat: 'mp3',
     Text: text,
     VoiceId: voice,
-    SpeechRate: 'slow' // add this line to slow down the speech
+
   };
 
   polly.synthesizeSpeech(params, (err, data) => {
