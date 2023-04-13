@@ -64,7 +64,6 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
     OutputFormat: 'mp3',
     Text: text,
     VoiceId: voice,
-
   };
 
   polly.synthesizeSpeech(params, (err, data) => {
@@ -97,24 +96,6 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
             const musicPath = req.file.path;
             await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
           }
-          // delete files when finished 
-          // setTimeout(() => {
-          //   fs.unlink(voicePath, (err) => {
-          //     if (err) {
-          //       console.error(err);
-          //       return;
-          //     }
-          //     console.log('Voice File deleted successfully');
-          //   });
-
-          //   fs.unlink(musicPath, (err) => {
-          //     if (err) {
-          //       console.error(err);
-          //       return;
-          //     }
-          //     console.log('Music file deleted successfully');
-          //   });
-          // }, 9000);
         }
       });
     }
@@ -144,8 +125,63 @@ app.get('/get_voices', (req, res) => {
   });
 });
 
+app.get('/create_voice_samples', (req, res) => {
+  const params = {
+    Engine: 'neural'
+  };
+  polly.describeVoices(params, (err, data) => {
+    if (err) {
+      console.log(err, err.stack);
+      res.status(500).send(err);
+    } else {
+      const englishVoices = data.Voices.filter((voice) => {
+        return voice.LanguageName.includes('English');
+      });
+      const promises = englishVoices.map((voice) => {
+        return new Promise((resolve, reject) => {
+          const params = {
+            Engine: "neural",
+            OutputFormat: 'mp3',
+            Text: "Hello. I look forward to sharing your tales of horror and mystery",
+            VoiceId: voice.Id,
+          };
+          polly.synthesizeSpeech(params, (err, data) => {
+            if (err) {
+              console.log(err);
+              reject(err);
+            } else if (data.AudioStream instanceof Buffer) {
+              const fileName = `${voice.Name.replace(/\s/g, '')}.mp3`;
+              const filePath = `./voice_samples/${fileName}`;
+              fs.writeFile(filePath, data.AudioStream, (err) => {
+                if (err) {
+                  console.log(err);
+                  reject(err);
+                } else {
+                  console.log(`${voice.Name} saved successfully`);
+                  resolve();
+                }
+              });
+            }
+          });
+        });
+      });
+      Promise.all(promises)
+        .then(() => {
+          res.send('All voices saved successfully');
+        })
+        .catch((err) => {
+          res.status(500).send(err);
+        });
+    }
+  });
+});
+
+
+
 // Start the server
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server started');
 });
+
+
 
