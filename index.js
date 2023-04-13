@@ -44,7 +44,6 @@ app.post('/voice_process_url', (req, res) => {
   mergeMusicUrl.mergeUrl(req, res);
 });
 
-
 app.post('/text_with_music', upload.single("file"), (req, res) => {
 
   if (!req.query.voiceDelay || !req.query.musicVolume || !req.query.voice || !req.query.text) {
@@ -64,7 +63,8 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
     Engine: "neural",
     OutputFormat: 'mp3',
     Text: text,
-    VoiceId: voice
+    VoiceId: voice,
+    SpeechRate: 'slow' // add this line to slow down the speech
   };
 
   polly.synthesizeSpeech(params, (err, data) => {
@@ -121,8 +121,12 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
   });
 });
 
+
 app.get('/get_voices', (req, res) => {
-  polly.describeVoices({}, (err, data) => {
+  const params = {
+    Engine: 'neural'
+  };
+  polly.describeVoices(params, (err, data) => {
     if (err) {
       console.log(err, err.stack);
       res.status(500).send(err);
