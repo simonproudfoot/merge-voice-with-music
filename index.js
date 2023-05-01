@@ -46,10 +46,16 @@ app.post('/voice_process_url', (req, res) => {
 
 app.post('/text_with_music', upload.single("file"), (req, res) => {
 
-  if (!req.query.voiceDelay || !req.query.musicVolume || !req.query.voice || !req.query.text) {
-    res.json({ error: 'Params missing' })
+  if (!req.query.text) {
+    res.json({ error: 'Text param missing' })
     return
   }
+
+  if (!req.query.voice) {
+    res.json({ error: 'Voice param missing' })
+    return
+  }
+
   // voice params
   let text = req.query.text
   let voice = req.query.voice
