@@ -61,9 +61,9 @@ app.post('/text_with_music', upload.single("file"), (req, res) => {
   let voice = req.query.voice
 
   // music params
-  const voiceDelay = req.query.voiceDelay;
-  const musicVolume = req.query.musicVolume;
-  const loopMusic = req.query.loopMusic == 'true' ? true : false
+  const voiceDelay = !req.query.voiceDelay ? 0 : req.query.voiceDelay; 
+  const musicVolume = !req.query.musicVolume ? 1 : req.query.musicVolume;
+  const loopMusic = !req.query.loopMusic ? false : req.query.loopMusic == 'true' ? true : false
 
   const params = {
     Engine: "neural",
