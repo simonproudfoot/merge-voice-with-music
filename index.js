@@ -130,6 +130,7 @@ app.post('/text_with_music', upload.single("file"), async (req, res) => {
 app.get('/get_voices', async (req, res) => {
   try {
 
+
     const response = await axios.get('na', {
       headers: {
         'xi-api-key': process.env['ELEVENLABS_API_KEY'],
@@ -138,13 +139,14 @@ app.get('/get_voices', async (req, res) => {
       }
     });
 
+    console.log(response);
+
     const voices = response.data.voices.map((voice) => ({
 
       name: voice.name,
       language: 'English',
       gender: 'male',
       id: voice.voice_id,
-
     }));
 
     res.send(voices);
