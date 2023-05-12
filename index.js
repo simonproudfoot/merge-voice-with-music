@@ -6,6 +6,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const cors = require('cors');
+const axios = require('axios');
 
 // Set up Express app
 const app = express();
@@ -14,13 +15,9 @@ app.use(cors({
 }));
 
 // AWS DEPENDENCIES
-const AWS = require('aws-sdk');
+
 const fs = require('fs');
-const polly = new AWS.Polly({
-  accessKeyId: process.env['AWS_ACCESS_KEY_ID'],
-  secretAccessKey: process.env['AWS_SECRET_ACCESS_KEY'],
-  region: process.env['AWS_REGION']
-});
+
 
 var storage = multer.diskStorage(
   {
@@ -44,150 +41,149 @@ app.post('/voice_process_url', (req, res) => {
   mergeMusicUrl.mergeUrl(req, res);
 });
 
-app.post('/text_with_music', upload.single("file"), (req, res) => {
-
+app.post('/text_with_music', upload.single("file"), async (req, res) => {
   if (!req.query.text) {
-    res.json({ error: 'Text param missing' })
-    return
+    res.json({ error: 'Text param missing' });
+    return;
   }
 
   if (!req.query.voice) {
-    res.json({ error: 'Voice param missing' })
-    return
+    res.json({ error: 'Voice param missing' });
+    return;
   }
 
-  // voice params
-  let text = req.query.text
-  let voice = req.query.voice
+  // Voice params
+  const text = req.query.text;
+  const voice = req.query.voice;
 
-  // music params
-  const voiceDelay = !req.query.voiceDelay ? 0 : req.query.voiceDelay; 
+  // Music params
+  const voiceDelay = !req.query.voiceDelay ? 0 : req.query.voiceDelay;
   const musicVolume = !req.query.musicVolume ? 1 : req.query.musicVolume;
-  const loopMusic = !req.query.loopMusic ? false : req.query.loopMusic == 'true' ? true : false
+  const loopMusic = !req.query.loopMusic ? false : req.query.loopMusic == 'true' ? true : false;
 
-  const params = {
-    Engine: "neural",
-    OutputFormat: 'mp3',
-    Text: text,
-    VoiceId: voice,
+  const url = "https://api.elevenlabs.io/v1/text-to-speech/" + voice;
+  const headers = {
+    "Accept": "audio/mpeg",
+    "Content-Type": "application/json",
+    "xi-api-key": process.env['ELEVENLABS_API_KEY'],
   };
 
-  polly.synthesizeSpeech(params, (err, data) => {
-    if (err) {
-      console.log(err);
-      res.status(500).json({ error: 'Failed to generate speech' });
-    } else if (data.AudioStream instanceof Buffer) {
-      fs.writeFile('speech.mp3', data.AudioStream, async (err) => {
-        if (err) {
-          console.log(err);
-          res.status(500).json({ error: 'Failed to save speech file' });
-        } else {
+  const data = {
+    "text": text,
+    "model_id": "eleven_monolingual_v1",
+    "voice_settings": {
+      "stability": 0,
+      "similarity_boost": 0
+    }
+  };
 
-          const mergeFiles = require('./mergeFiles.js');
-          const voicePath = __dirname + '/speech.mp3'
+  try {
+    const response = await axios.post(url, data, { headers, responseType: 'stream' });
 
-          // voice only
-          if (!req.file || req.file == undefined || req.file == null || req.file == '') {
+    response.data.pipe(fs.createWriteStream('speech.mp3'));
 
-            res.sendFile(voicePath, (err) => {
-              if (err) {
-                console.log('An error occurred while sending the file: ' + err.message);
-                res.status(500).send('An error occurred while sending the file');
-              } else {
-                console.log('File sent successfully');
-                return
-              }
-            });
+    response.data.on('end', async () => {
+      const mergeFiles = require('./mergeFiles.js');
+      const voicePath = __dirname + '/speech.mp3';
+
+      // Voice only
+      if (!req.file || req.file == undefined || req.file == null || req.file == '') {
+        res.sendFile(voicePath, (err) => {
+          if (err) {
+            console.log('An error occurred while sending the file: ' + err.message);
+            res.status(500).send('An error occurred while sending the file');
           } else {
-            const musicPath = req.file.path;
-            await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
+            console.log('File sent successfully');
           }
+        });
+      } else {
+        const musicPath = req.file.path;
+        await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Failed to generate speech' });
+  }
+});
+
+app.get('/get_voices', async (req, res) => {
+  try {
+
+    const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': process.env['ELEVENLABS_API_KEY'],
+        'X-Api-Key': process.env['ELEVENLABS_API_KEY'],
+        'accept': 'application/json',
+      }
+    });
+
+    const voices = response.data.voices.map((voice) => ({
+
+      name: voice.name,
+      language: 'English',
+      gender: 'male',
+      id: voice.voice_id,
+
+    }));
+
+    res.send(voices);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Failed to retrieve voices' });
+  }
+});
+
+
+app.get('/create_voice_samples', async (req, res) => {
+  try {
+    const voicesResponse = await axios.get('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': process.env['ELEVENLABS_API_KEY'],
+        'X-Api-Key': process.env['ELEVENLABS_API_KEY'],
+        'accept': 'application/json',
+      }
+    });
+
+    const voices = voicesResponse.data.voices;
+
+    for (const voice of voices) {
+      const voiceId = voice.voice_id;
+      const voiceName = voice.name;
+
+      const url = "https://api.elevenlabs.io/v1/text-to-speech/" + voiceId;
+      const headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": process.env['ELEVENLABS_API_KEY'],
+      };
+
+      const data = {
+        "text": "hello, I'm " + voiceName + ". I look forward to sharing your tales of horror and mystery!",
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+          "stability": 0,
+          "similarity_boost": 0
         }
-      });
+      };
+
+      const response = await axios.post(url, data, { headers, responseType: 'stream' });
+      const filePath = `./voice_samples/${voiceName}.mp3`;
+
+      response.data.pipe(fs.createWriteStream(filePath));
     }
-  });
+
+    res.send('Voice samples created successfully.');
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Failed to create voice samples' });
+  }
 });
 
-
-app.get('/get_voices', (req, res) => {
-  const params = {
-    Engine: 'neural'
-  };
-  polly.describeVoices(params, (err, data) => {
-    if (err) {
-      console.log(err, err.stack);
-      res.status(500).send(err);
-    } else {
-      const voices = data.Voices.map((voice) => {
-        return {
-          name: voice.Name,
-          language: voice.LanguageName,
-          gender: voice.Gender,
-          id: voice.Id,
-        };
-      });
-      res.send(voices);
-    }
-  });
-});
-
-app.get('/create_voice_samples', (req, res) => {
-  const params = {
-    Engine: 'neural'
-  };
-  polly.describeVoices(params, (err, data) => {
-    if (err) {
-      console.log(err, err.stack);
-      res.status(500).send(err);
-    } else {
-      const englishVoices = data.Voices.filter((voice) => {
-        return voice.LanguageName.includes('English');
-      });
-      const promises = englishVoices.map((voice) => {
-        return new Promise((resolve, reject) => {
-          const params = {
-            Engine: "neural",
-            OutputFormat: 'mp3',
-            Text: "Hello. I look forward to sharing your tales of horror and mystery",
-            VoiceId: voice.Id,
-          };
-          polly.synthesizeSpeech(params, (err, data) => {
-            if (err) {
-              console.log(err);
-              reject(err);
-            } else if (data.AudioStream instanceof Buffer) {
-              const fileName = `${voice.Name.replace(/\s/g, '')}.mp3`;
-              const filePath = `./voice_samples/${fileName}`;
-              fs.writeFile(filePath, data.AudioStream, (err) => {
-                if (err) {
-                  console.log(err);
-                  reject(err);
-                } else {
-                  console.log(`${voice.Name} saved successfully`);
-                  resolve();
-                }
-              });
-            }
-          });
-        });
-      });
-      Promise.all(promises)
-        .then(() => {
-          res.send('All voices saved successfully');
-        })
-        .catch((err) => {
-          res.status(500).send(err);
-        });
-    }
-  });
-});
 
 
 
 // Start the server
-app.listen(process.env.PORT || 3000, () => {
+app.listen(process.env.PORT || 8080, () => {
   console.log('Server started');
 });
-
-
-
