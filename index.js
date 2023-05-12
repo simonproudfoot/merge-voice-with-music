@@ -206,6 +206,6 @@ app.get('/create_voice_samples', async (req, res) => {
 
 
 // Start the server
-app.listen(process.env.PORT || 8080, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log('Server started');
 });
