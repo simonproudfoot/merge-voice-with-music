@@ -127,32 +127,6 @@ app.post('/text_with_music', upload.single("file"), async (req, res) => {
 });
 
 
-app.get('/get_voices', async (req, res) => {
-  try {
-    const response = await axios.get('https://api.elevenlabs.io/v1/voice', {
-      headers: {
-        'xi-api-key': process.env['ELEVENLABS_API_KEY'],
-        'X-Api-Key': process.env['ELEVENLABS_API_KEY'],
-        'accept': 'application/json',
-      }
-    });
-
-    console.log(response.data.voices);
-
-    const voices = response.data.voices.map((voice) => ({
-
-      name: voice.name,
-      language: 'English',
-      gender: 'male',
-      id: voice.voice_id,
-    }));
-
-    res.send(voices);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: 'Failed to retrieve voices' });
-  }
-});
 
 
 app.get('/create_voice_samples', async (req, res) => {
@@ -199,6 +173,37 @@ app.get('/create_voice_samples', async (req, res) => {
     res.status(500).json({ error: 'Failed to create voice samples' });
   }
 });
+
+
+
+
+app.get('/get_voices', async (req, res) => {
+  try {
+    const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
+      headers: {
+        'xi-api-key': process.env['ELEVENLABS_API_KEY'],
+        'X-Api-Key': process.env['ELEVENLABS_API_KEY'],
+        'accept': 'application/json',
+      }
+    });
+
+    console.log(response.data.voices);
+
+    const voices = response.data.voices.map((voice) => ({
+
+      name: voice.name,
+      language: 'English',
+      gender: 'male',
+      id: voice.voice_id,
+    }));
+
+    res.send(voices);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: 'Failed to retrieve voices' });
+  }
+});
+
 
 
 
