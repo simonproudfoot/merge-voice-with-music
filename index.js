@@ -33,17 +33,16 @@ var upload = multer({ storage: storage });
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-
 // PRO VERSION - ELEVEN LABS
-app.post('/text_with_music_pro', upload.single('file'), textWithMusic.textWithMusic);
-app.get('/get_voices_pro', getVoices.getVoices);
-app.get('/create_voice_samples_pro', createSamples.createSamples);
-
-
-// BASIC VERSION - AWS
 app.post('/text_with_music', upload.single('file'), textWithMusic.textWithMusic);
 app.get('/get_voices', getVoices.getVoices);
 app.get('/create_voice_samples', createSamples.createSamples);
+
+
+// // BASIC VERSION - AWS
+// app.post('/text_with_music', upload.single('file'), textWithMusic.textWithMusic);
+// app.get('/get_voices', getVoices.getVoices);
+// app.get('/create_voice_samples', createSamples.createSamples);
 
 
 app.listen(process.env.PORT || 3000, () => {
