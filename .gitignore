@@ -1,7 +1,7 @@
 /node_modules
 /sounds
 /uploads
-/storage
+/storage/*
 .env
 
 speech.mp3
