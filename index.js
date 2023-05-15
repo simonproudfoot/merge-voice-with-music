@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const cors = require('cors');
 const fs = require('fs');
-const tmp = require('tmp');
 const textWithMusic = require('./ai-functions/textWithMusic.js');
 const getVoices = require('./ai-functions/getVoices.js');
 const createSamples = require('./ai-functions/createSamples.js');
