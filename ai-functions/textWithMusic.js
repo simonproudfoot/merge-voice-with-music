@@ -5,7 +5,7 @@ const uuid = require('uuid');
 const deleteOldFiles = require('../deleteOldFiles');
 const path = require('path');
 exports.textWithMusic = async (req, res) => {
-   
+    req.setTimeout(300000);
     // Get the storage directory path
     const storageDirectory = path.join(__dirname, '..', 'storage');
     // Delete files older than 10 minutes
