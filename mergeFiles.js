@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic) {
+    console.log('Merging files: ', voicePath)
     const uniqueId = Math.floor(Math.random() * 1000000); 
     const outputFile = `output_${uniqueId}.mp3`; 
     let audioFileDetails = await getSampleSize(musicPath)
@@ -71,6 +72,7 @@ async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, lo
     ])
     const outputFilePath = path.join(__dirname, 'storage', outputFile);
     //Set the output format and file path
+    console.log('Saving final...: ', voicePath)
     command.outputFormat('mp3').save(outputFilePath);
     // Run the command and send the output file as a response
     command.on('error', function (err) {
