@@ -1,21 +1,22 @@
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
+const { app } = require("./firebase/config");
+const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 
 async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic) {
-    console.log('Merging files: ', musicPath)
+    console.log('Merging files:', musicPath);
     const uniqueId = Math.floor(Math.random() * 1000000);
     const outputFile = `output_${uniqueId}.mp3`;
-    let audioFileDetails = await getSampleSize(musicPath)
-    let voiceFileDetails = await getSampleSize(voicePath)
-    let voiceLength = voiceFileDetails.streams[0].duration
+    let audioFileDetails = await getSampleSize(musicPath);
+    let voiceFileDetails = await getSampleSize(voicePath);
+    let voiceLength = voiceFileDetails.streams[0].duration;
 
     const command = ffmpeg();
     // Add the voice file
     command.input(voicePath);
     // Add the music file
-    command.input(musicPath)
-
+    command.input(musicPath);
     // run filters
     command.complexFilter([
         {
@@ -70,21 +71,52 @@ async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMus
             }
         }
     ])
-    const outputFilePath = path.join(__dirname, 'storage', outputFile);
-    // Set the output format and file path
-    console.log('Saving final...: ', voicePath);
-    command.outputFormat('mp3').save(outputFilePath);
-    // Run the command and send the output file as a response
-    command.on('error', function (err) {
-        console.log('An error occurred: ' + err.message);
-        res.status(500).send('An error occurred while processing the voice file');
-    })
-        .on('end', function () {
-            // File saved, do something with it
-            console.log('File saved: ', outputFilePath);
-            // You can perform any additional operations on the saved file here
-        });
+
+    // Set output file path
+    const outputPath = path.join(__dirname, outputFile);
+
+    command.output(outputPath)
+        .on('end', async () => {
+            try {
+                // Get a reference to the Firebase Storage bucket
+                const storage = getStorage(app);
+
+                // Create a reference to the output file in Firebase Storage
+                const storageRef = ref(storage, `${outputFile}`);
+
+                // Read the output file from the local filesystem
+                const fileData = fs.readFileSync(outputPath);
+
+                // Upload the file to Firebase Storage
+                await uploadBytes(storageRef, fileData);
+
+                // Get the download URL of the uploaded file
+                const downloadURL = await getDownloadURL(storageRef);
+
+                console.log('Merged file uploaded:', downloadURL);
+
+                // Optionally, you can delete the local output file
+                fs.unlinkSync(outputPath);
+            } catch (error) {
+                console.error('Error uploading merged file:', error);
+            }
+        })
+        .run();
 }
+
+function getSampleSize(filePath) {
+    return new Promise((resolve, reject) => {
+        ffmpeg.ffprobe(filePath, (err, metadata) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(metadata);
+            }
+        });
+    });
+}
+
+
 function getSampleSize(filePath) {
     return new Promise((resolve, reject) => {
         ffmpeg.ffprobe(filePath, (err, metadata) => {
