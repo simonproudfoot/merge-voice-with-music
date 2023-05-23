@@ -1,1 +1,1 @@
-worker: node worker.rb
+worker: node worker.js
