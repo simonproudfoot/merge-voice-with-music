@@ -39,14 +39,13 @@ server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res
     }
 
     const uniqueId = Math.floor(Math.random() * 1000000); // ID for all files
-    const file = req.file.buffer; // Access the file buffer
-    const modifiedFileName = `music_${uniqueId}.mp3`;
+    // const file = req.file.buffer; // Access the file buffer
+    // const modifiedFileName = `music_${uniqueId}.mp3`;
     const userEmail = req.query.userEmail;
-    const storageRef = ref(storage, `${userEmail}/${modifiedFileName}`);
-    await uploadBytes(storageRef, file);
-    const fileUrl = await getDownloadURL(storageRef);
-    await processVoice(req, fileUrl, uniqueId);
-
+    // const storageRef = ref(storage, `${userEmail}/${modifiedFileName}`);
+    // await uploadBytes(storageRef, file);
+    // const fileUrl = await getDownloadURL(storageRef);
+    processVoice(req, uniqueId);
     const downloadToken = uniqueId // Replace with the actual download token if required
     const downloadUrl = createPersistentDownloadUrl(process.env['FIREBASE_STOTAGE_BUCKET'], `${userEmail}/output_${uniqueId}.mp3`, downloadToken);
 

@@ -8,7 +8,7 @@ const { app } = require("./firebase/config");
 const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 
 
-async function processVoice(req, musicPath, uniqueId) {
+async function processVoice(req, uniqueId) {
   try {
 
     const storage = getStorage(app);
@@ -17,6 +17,12 @@ async function processVoice(req, musicPath, uniqueId) {
     const voiceDelay = !req.query.voiceDelay ? 0 : req.query.voiceDelay;
     const musicVolume = !req.query.musicVolume ? 1 : req.query.musicVolume;
     const loopMusic = !req.query.loopMusic ? false : req.query.loopMusic == 'true' ? true : false;
+
+    const file = req.file.buffer; // Access the file buffer
+    const modifiedFileName = `music_${uniqueId}.mp3`;
+    const storageRef1 = ref(storage, `${req.query.userEmail}/${modifiedFileName}`);
+    await uploadBytes(storageRef1, file);
+    const musicPath = await getDownloadURL(storageRef1); // Updated line
 
     const username = '';
     const sourceUrl = '';
