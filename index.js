@@ -22,23 +22,40 @@ const uploadMiddleware = multer({
 
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
-
 server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res) => {
   try {
+    
+    if (!req.query.text) {
+      res.status(400).send('Missing "text" param');
+      return;
+    }
+    if (!req.query.voice) {
+      res.status(400).send('Missing "voice" param');
+      return;
+    }
+    if (!req.query.userEmail) {
+      res.status(400).send('Missing "userEmail" param');
+      return;
+    }
+
+    const uniqueId = Math.floor(Math.random() * 1000000); // ID for all files
+
+
     const file = req.file;
 
-    const uniqueId = Math.floor(Math.random() * 1000000);
+
     const modifiedFileName = `music_${uniqueId}.mp3`;
 
-    const storageRef = ref(storage, modifiedFileName);
+    const userEmail = req.query.userEmail;
+    const storageRef = ref(storage, `${userEmail}/${modifiedFileName}`);
     await uploadBytes(storageRef, file.buffer);
 
-    const fileUrl = `gs://${storage.bucket}/${modifiedFileName}`;
-    const musicPath = await getDownloadURL(storageRef, fileUrl);
+    const fileUrl = await getDownloadURL(storageRef);
 
-    await processVoice(req, musicPath);
+    await processVoice(req, fileUrl, uniqueId);
+   
+    res.status(200).json({ proccessing: uniqueId })
 
-    res.status(200).send('Received. Please wait for your file to be processed');
   } catch (err) {
     console.log(err);
     res.status(500).send('An error occurred while processing and saving the file to Firebase Storage');

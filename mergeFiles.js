@@ -4,9 +4,7 @@ const fs = require('fs');
 const { app } = require("./firebase/config");
 const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 
-async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic) {
-    console.log('Merging files:', musicPath);
-    const uniqueId = Math.floor(Math.random() * 1000000);
+async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic, userEmail, uniqueId) {
     const outputFile = `output_${uniqueId}.mp3`;
     let audioFileDetails = await getSampleSize(musicPath);
     let voiceFileDetails = await getSampleSize(voicePath);
@@ -82,7 +80,7 @@ async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMus
                 const storage = getStorage(app);
 
                 // Create a reference to the output file in Firebase Storage
-                const storageRef = ref(storage, `${outputFile}`);
+                const storageRef = ref(storage, `${userEmail}/${outputFile}`);
 
                 // Read the output file from the local filesystem
                 const fileData = fs.readFileSync(outputPath);
@@ -93,7 +91,7 @@ async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMus
                 // Get the download URL of the uploaded file
                 const downloadURL = await getDownloadURL(storageRef);
 
-                console.log('Merged file uploaded:', downloadURL);
+                console.log('Merged file uploaded:', uniqueId);
 
                 // Optionally, you can delete the local output file
                 fs.unlinkSync(outputPath);

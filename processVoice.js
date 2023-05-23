@@ -7,7 +7,8 @@ const { pipeline } = require('node:stream/promises');
 const { app } = require("./firebase/config");
 const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 
-async function processVoice(req, musicPath) {
+
+async function processVoice(req, musicPath, uniqueId) {
   try {
 
     const storage = getStorage(app);
@@ -53,19 +54,15 @@ async function processVoice(req, musicPath) {
 
     console.log('Creating voice');
     const response = await axios.post(url, data, { headers, responseType: 'arraybuffer' });
-    const uniqueId = uuid.v4();
-    const storageFilePath = `speech_${uniqueId}.mp3`;
+    const storageFilePath = `${req.query.userEmail}/speech_${uniqueId}.mp3`;
     const storageRef = ref(storage, storageFilePath);
     await uploadBytes(storageRef, response.data);
-
-    // const voicePath = `gs://${storage.bucket}/${storageFilePath}`;
-
     const voicePath = await getDownloadURL(storageRef, storageFilePath);
 
-    await mergeFiles.mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
+    await mergeFiles.mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic, req.query.userEmail, uniqueId);
 
   } catch (error) {
-    console.log('An error occurred:', error.message);
+    console.log('An error occurred:', error.message,);
   }
 }
 
