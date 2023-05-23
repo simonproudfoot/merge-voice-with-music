@@ -7,7 +7,7 @@ const { pipeline } = require('node:stream/promises');
 
 async function processVoice(req, res) {
     try {
-        const storageDirectory = path.join(__dirname, '..', 'storage');
+        const storageDirectory = path.join(__dirname, 'storage');
 
         const text = req.query.text;
         const voiceName = req.query.voice;
@@ -54,22 +54,22 @@ async function processVoice(req, res) {
         await pipeline(response.data, writeStream);
 
         const voicePath = storageFilePath;
-        console.log('All done!: ', voicePath);
+
 
         if (!req.file || req.file == undefined || req.file == null || req.file == '') {
             const savedFilePath = path.join(storageDirectory, `final_${uniqueId}.mp3`);
             fs.rename(voicePath, savedFilePath, (err) => {
                 if (err) {
                     console.log('An error occurred while saving the file:', err);
-                    res.status(500).send('An error occurred while saving the file');
+                
                 } else {
                     console.log('File saved successfully:', savedFilePath);
-                    res.json({ filePath: savedFilePath });
+                
                 }
             });
         } else {
             const musicPath = req.file.path;
-            await mergeFiles.mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
+            await mergeFiles.mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic);
         }
     } catch (err) {
         console.log(err);

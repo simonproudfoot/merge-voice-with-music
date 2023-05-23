@@ -2,10 +2,10 @@ const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
 
-async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, loopMusic) {
-    console.log('Merging files: ', voicePath)
-    const uniqueId = Math.floor(Math.random() * 1000000); 
-    const outputFile = `output_${uniqueId}.mp3`; 
+async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic) {
+    console.log('Merging files: ', musicPath)
+    const uniqueId = Math.floor(Math.random() * 1000000);
+    const outputFile = `output_${uniqueId}.mp3`;
     let audioFileDetails = await getSampleSize(musicPath)
     let voiceFileDetails = await getSampleSize(voicePath)
     let voiceLength = voiceFileDetails.streams[0].duration
@@ -71,8 +71,8 @@ async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, lo
         }
     ])
     const outputFilePath = path.join(__dirname, 'storage', outputFile);
-    //Set the output format and file path
-    console.log('Saving final...: ', voicePath)
+    // Set the output format and file path
+    console.log('Saving final...: ', voicePath);
     command.outputFormat('mp3').save(outputFilePath);
     // Run the command and send the output file as a response
     command.on('error', function (err) {
@@ -80,22 +80,9 @@ async function mergeFiles(res, voicePath, musicPath, voiceDelay, musicVolume, lo
         res.status(500).send('An error occurred while processing the voice file');
     })
         .on('end', function () {
-            console.log('Finished processing');
-            res.sendFile(outputFile, { root: path.join(__dirname, 'storage') }, (err) => {
-                if (err) {
-                    console.log('An error occurred while sending the file: ' + err.message);
-                    res.status(500).send('An error occurred while sending the file');
-                } else {
-                    console.log('File sent successfully');
-                    // Delete the temporary output file after sending
-                    fs.unlink(outputFilePath, (err) => {
-                        if (err) {
-                            console.log('An error occurred while deleting the file: ' + err.message);
-                        }
-                    });
-                }
-            });
-
+            // File saved, do something with it
+            console.log('File saved: ', outputFilePath);
+            // You can perform any additional operations on the saved file here
         });
 }
 function getSampleSize(filePath) {
