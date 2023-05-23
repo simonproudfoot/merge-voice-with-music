@@ -46,6 +46,8 @@ server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res
     // await uploadBytes(storageRef, file);
     // const fileUrl = await getDownloadURL(storageRef);
     processVoice(req, uniqueId);
+    
+
     const downloadToken = uniqueId // Replace with the actual download token if required
     const downloadUrl = createPersistentDownloadUrl(process.env['FIREBASE_STOTAGE_BUCKET'], `${userEmail}/output_${uniqueId}.mp3`, downloadToken);
 

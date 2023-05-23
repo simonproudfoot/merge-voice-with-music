@@ -66,11 +66,12 @@ async function processVoice(req, uniqueId) {
     const voicePath = await getDownloadURL(storageRef, storageFilePath);
 
     await mergeFiles.mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMusic, req.query.userEmail, uniqueId);
-    process.exit();
+
   } catch (error) {
     console.log('An error occurred:', error.message,);
     process.exit();
   }
+  
 }
 
 module.exports = processVoice;
