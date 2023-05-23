@@ -4,7 +4,8 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const cors = require('cors');
 const fs = require('fs');
-const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
+const { getStorage, ref, uploadBytes, getDownloadURL, getMetadata } = require('firebase/storage');
+
 const { app } = require('./firebase/config');
 const processVoice = require('./processVoice');
 
@@ -24,7 +25,7 @@ server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res) => {
   try {
-    
+
     if (!req.query.text) {
       res.status(400).send('Missing "text" param');
       return;
@@ -53,14 +54,38 @@ server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res
     const fileUrl = await getDownloadURL(storageRef);
 
     await processVoice(req, fileUrl, uniqueId);
-   
-    res.status(200).json({ proccessing: uniqueId })
+
+    res.status(200).json({ processing: uniqueId })
 
   } catch (err) {
     console.log(err);
     res.status(500).send('An error occurred while processing and saving the file to Firebase Storage');
   }
 });
+
+
+server.get('/get_file', async (req, res) => {
+  const { id, userEmail } = req.query;
+  const filePath = `${userEmail}/output_${id}.mp3`;
+
+  try {
+    // Get a reference to the Firebase Storage bucket
+    const storage = getStorage(app);
+
+    // Create a reference to the file in Firebase Storage
+    const fileRef = ref(storage, filePath);
+
+    // Check if the file exists
+    const metadata = await getMetadata(fileRef);
+
+    // If the file exists, return it in the response
+    const downloadURL = await getDownloadURL(fileRef);
+    res.json({ fileStatus: "Ready", url: downloadURL });
+  } catch (error) {
+    // File does not exist
+    res.json({ fileStatus: "Not ready" });
+  }
+})
 
 server.listen(process.env.PORT || 3000, () => {
   console.log('Server started');
