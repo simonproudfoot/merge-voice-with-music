@@ -102,17 +102,7 @@ async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMus
         .run();
 }
 
-function getSampleSize(filePath) {
-    return new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(filePath, (err, metadata) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(metadata);
-            }
-        });
-    });
-}
+
 
 
 function getSampleSize(filePath) {

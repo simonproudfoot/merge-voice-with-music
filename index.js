@@ -25,7 +25,6 @@ server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res) => {
   try {
-
     if (!req.query.text) {
       res.status(400).send('Missing "text" param');
       return;
@@ -40,28 +39,29 @@ server.post('/text_with_music', uploadMiddleware.single('file'), async (req, res
     }
 
     const uniqueId = Math.floor(Math.random() * 1000000); // ID for all files
-
-
-    const file = req.file;
-
-
+    const file = req.file.buffer; // Access the file buffer
     const modifiedFileName = `music_${uniqueId}.mp3`;
-
     const userEmail = req.query.userEmail;
     const storageRef = ref(storage, `${userEmail}/${modifiedFileName}`);
-    await uploadBytes(storageRef, file.buffer);
-
+    await uploadBytes(storageRef, file);
     const fileUrl = await getDownloadURL(storageRef);
-
     await processVoice(req, fileUrl, uniqueId);
 
-    res.status(200).json({ processing: uniqueId })
+    const downloadToken = uniqueId // Replace with the actual download token if required
+    const downloadUrl = createPersistentDownloadUrl(process.env['FIREBASE_STOTAGE_BUCKET'], `${userEmail}/output_${uniqueId}.mp3`, downloadToken);
 
+    res.status(200).json({ fileStatus: 'processing', url: downloadUrl });
   } catch (err) {
     console.log(err);
     res.status(500).send('An error occurred while processing and saving the file to Firebase Storage');
   }
 });
+
+const createPersistentDownloadUrl = (bucket, pathToFile, downloadToken) => {
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(
+    pathToFile
+  )}?alt=media&token=${downloadToken}`;
+};
 
 
 server.get('/get_file', async (req, res) => {
