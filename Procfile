@@ -1,1 +1,2 @@
-worker: node worker.js
+processVoice: node processVoice.js
+mergeFiles: node mergeFiles.js
