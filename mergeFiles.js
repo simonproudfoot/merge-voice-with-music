@@ -92,11 +92,13 @@ async function mergeFiles(voicePath, musicPath, voiceDelay, musicVolume, loopMus
                 const downloadURL = await getDownloadURL(storageRef);
 
                 console.log('Merged file uploaded:', uniqueId);
-
+            
                 // Optionally, you can delete the local output file
                 fs.unlinkSync(outputPath);
+                process.exit();
             } catch (error) {
                 console.error('Error uploading merged file:', error);
+                process.exit();
             }
         })
         .run();
